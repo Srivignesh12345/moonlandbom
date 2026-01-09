@@ -1,4 +1,4 @@
-    // Initialize Firebase
+// Initialize Firebase
 firebase.initializeApp(window.FIREBASE_CONFIG);
 
 // Initialize Firestore
@@ -8,6 +8,16 @@ let currentBOMId = null;
 
 
 console.log("Firebase connected successfully");
+
+// ✅ SAFE helper to get last dynamic block
+function getLastBlock(selector) {
+    const blocks = document.querySelectorAll(selector);
+    if (!blocks.length) return null;
+    return blocks[blocks.length - 1];
+}
+
+
+
 
 // ================================
 // SAVE BOM TO FIREBASE
@@ -97,6 +107,18 @@ async function loadSavedEntriesFromFirebase() {
         savedList.innerHTML = '<p style="color:red;">Failed to load entries</p>';
     }
 }
+function resetContainer(containerId, blockClass) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const template = container.querySelector(blockClass);
+    container.innerHTML = '';
+    if (template) {
+        container.appendChild(template);
+    }
+}
+
+
 
 // ================================
 // LOAD BOM DATA INTO FORM
@@ -109,53 +131,62 @@ function loadBOMIntoForm(data) {
     // 🔥 ENABLE EDIT MODE
     currentBOMId = data._id || null;
 
-    // -----------------------------
-    // 1. ORDER INFORMATION
-    // -----------------------------
-    document.getElementById('orderDate').value = data.orderDate || '';
-    document.getElementById('expectedDeliveryDate').value = data.expectedDeliveryDate || '';
-    document.getElementById('orderNumber').value = data.orderNumber || '';
-    document.getElementById('orderType').value = data.orderType || '';
-    document.getElementById('buyerName').value = data.buyerName || '';
+    /* =========================
+       1️⃣ RESET FORM & BLOCKS
+    ========================= */
+    document.getElementById('bomForm').reset();
 
-    // -----------------------------
-    // 2. CLEAR EXISTING DYNAMIC BLOCKS
-    // -----------------------------
-    document.getElementById('fabricBlocks').innerHTML = '';
-    document.getElementById('collarBlocks').innerHTML = '';
-    document.getElementById('cuffBlocks').innerHTML = '';
-    document.getElementById('buttonBlocks').innerHTML = '';
-    document.getElementById('velvetBlocks').innerHTML = '';
-    document.getElementById('washCareBlocks').innerHTML = '';
-    document.getElementById('wovenBlocks').innerHTML = '';
+    resetContainer('fabricBlocks', '.fabric-block');
+resetContainer('collarBlocks', '.collar-block');
+resetContainer('cuffBlocks', '.cuff-block');
+resetContainer('buttonBlocks', '.button-block');
+resetContainer('velvetBlocks', '.velvet-block');
+resetContainer('washCareBlocks', '.washcare-block');
+resetContainer('wovenBlocks', '.woven-block');
 
-    // -----------------------------
-    // 3. FABRICS
-    // -----------------------------
-    (data.fabrics || []).forEach(fab => {
-        document.querySelector('.add-fabric-btn').click();
 
-        const blocks = document.querySelectorAll('.fabric-block');
-        const block = blocks[blocks.length - 1];
+    /* =========================
+       2️⃣ ORDER INFORMATION
+    ========================= */
+    const oi = data.orderInfo || {};
+    document.getElementById('orderDate').value = oi.orderDate || '';
+    document.getElementById('expectedDeliveryDate').value = oi.expectedDeliveryDate || '';
+    document.getElementById('orderNumber').value = oi.orderNumber || '';
+    document.getElementById('orderType').value = oi.orderType || '';
+    document.getElementById('buyerName').value = oi.buyerName || '';
 
-        block.querySelector('.fabricType').value = fab.type || '';
-        block.querySelector('.fabricColor').value = fab.color || '';
-        block.querySelector('.fabricAmount').value = fab.amount || '';
-        block.querySelector('.fabricUnit').value = fab.unit || '';
-        block.querySelector('.fabricPerGarment').value = fab.perGarment || '';
-        block.querySelector('.fabricSupplier').value = fab.supplier || '';
-        block.querySelector('.fabricQty').value = fab.qty || '';
-        block.querySelector('.fabricTotal').value = fab.total || '';
-    });
+    /* =========================
+       3️⃣ FABRICS
+    ========================= */
+  (data.fabrics || []).forEach((fab, idx) => {
+    // For first row, use existing block; for others, add new
+    if (idx > 0) {
+      document.querySelector('.add-fabric-btn')?.click();
+    }
 
-    // -----------------------------
-    // 4. COLLAR MEASUREMENTS
-    // -----------------------------
-    (data.collars || []).forEach(col => {
-        document.querySelector('.add-collar-btn').click();
+    const block = idx === 0 ? document.querySelector('.fabric-block') : getLastBlock('.fabric-block');
+    if (!block) return;
 
-        const blocks = document.querySelectorAll('.collar-block');
-        const block = blocks[blocks.length - 1];
+    block.querySelector('.fabricType').value = fab.type || '';
+    block.querySelector('.fabricColor').value = fab.color || '';
+    block.querySelector('.fabricAmount').value = fab.amount || '';
+    block.querySelector('.fabricUnit').value = fab.unit || '';
+    block.querySelector('.fabricPerGarment').value = fab.perGarment || '';
+    block.querySelector('.fabricSupplier').value = fab.supplier || '';
+    block.querySelector('.fabricQty').value = fab.qty || '';
+    block.querySelector('.fabricTotal').value = fab.total || '';
+});
+
+
+    /* =========================
+       4️⃣ COLLARS
+    ========================= */
+    (data.collars || []).forEach((col, idx) => {
+        if (idx > 0) {
+            document.querySelector('.add-collar-btn').click();
+        }
+        const block = idx === 0 ? document.querySelector('.collar-block') : getLastBlock('.collar-block');
+        if (!block) return;
 
         block.querySelector('.collarSize').value = col.size || '';
         block.querySelector('.collarDimensions').value = col.dimensions || '';
@@ -166,14 +197,15 @@ function loadBOMIntoForm(data) {
         block.querySelector('.collarTotal').value = col.total || '';
     });
 
-    // -----------------------------
-    // 5. CUFF MEASUREMENTS
-    // -----------------------------
-    (data.cuffs || []).forEach(cuf => {
-        document.querySelector('.add-cuff-btn').click();
-
-        const blocks = document.querySelectorAll('.cuff-block');
-        const block = blocks[blocks.length - 1];
+    /* =========================
+       5️⃣ CUFFS
+    ========================= */
+    (data.cuffs || []).forEach((cuf, idx) => {
+        if (idx > 0) {
+            document.querySelector('.add-cuff-btn').click();
+        }
+        const block = idx === 0 ? document.querySelector('.cuff-block') : getLastBlock('.cuff-block');
+        if (!block) return;
 
         block.querySelector('.cuffSize').value = cuf.size || '';
         block.querySelector('.cuffDimensions').value = cuf.dimensions || '';
@@ -184,14 +216,15 @@ function loadBOMIntoForm(data) {
         block.querySelector('.cuffTotal').value = cuf.total || '';
     });
 
-    // -----------------------------
-    // 6. BUTTONS
-    // -----------------------------
-    (data.buttons || []).forEach(btn => {
-        document.querySelector('.add-button-btn').click();
-
-        const blocks = document.querySelectorAll('.button-block');
-        const block = blocks[blocks.length - 1];
+    /* =========================
+       6️⃣ BUTTONS
+    ========================= */
+    (data.buttons || []).forEach((btn, idx) => {
+        if (idx > 0) {
+            document.querySelector('.add-button-btn').click();
+        }
+        const block = idx === 0 ? document.querySelector('.button-block') : getLastBlock('.button-block');
+        if (!block) return;
 
         block.querySelector('.buttonMaterial').value = btn.material || '';
         block.querySelector('.buttonAmount').value = btn.amount || '';
@@ -202,17 +235,18 @@ function loadBOMIntoForm(data) {
         block.querySelector('.buttonTotal').value = btn.total || '';
     });
 
-    // -----------------------------
-    // 7. VELVET TAPES
-    // -----------------------------
-    (data.velvets || []).forEach(v => {
-        document.querySelector('.add-velvet-btn').click();
-
-        const blocks = document.querySelectorAll('.velvet-block');
-        const block = blocks[blocks.length - 1];
+    /* =========================
+       7️⃣ VELVET TAPES
+    ========================= */
+    (data.velvetTapes || []).forEach((v, idx) => {
+        if (idx > 0) {
+            document.querySelector('.add-velvet-btn').click();
+        }
+        const block = idx === 0 ? document.querySelector('.velvet-block') : getLastBlock('.velvet-block');
+        if (!block) return;
 
         block.querySelector('.velvetTapeQuality').value = v.quality || '';
-        block.querySelector('.velvetTapeMeter').value = v.amount || '';
+        block.querySelector('.velvetTapeMeter').value = v.meter || '';
         block.querySelector('.velvetTapeUnit').value = v.unit || '';
         block.querySelector('.velvetTapePerGarment').value = v.perGarment || '';
         block.querySelector('.velvetTapeSupplier').value = v.supplier || '';
@@ -220,14 +254,15 @@ function loadBOMIntoForm(data) {
         block.querySelector('.velvetTapeTotal').value = v.total || '';
     });
 
-    // -----------------------------
-    // 8. WASH CARE LABELS
-    // -----------------------------
-    (data.washCare || []).forEach(w => {
-        document.querySelector('.add-washcare-btn').click();
-
-        const blocks = document.querySelectorAll('.washcare-block');
-        const block = blocks[blocks.length - 1];
+    /* =========================
+       8️⃣ WASH CARE LABELS
+    ========================= */
+    (data.washCareLabels || []).forEach((w, idx) => {
+        if (idx > 0) {
+            document.querySelector('.add-washcare-btn').click();
+        }
+        const block = idx === 0 ? document.querySelector('.washcare-block') : getLastBlock('.washcare-block');
+        if (!block) return;
 
         block.querySelector('.washCareQuality').value = w.quality || '';
         block.querySelector('.washCareAmount').value = w.amount || '';
@@ -238,27 +273,70 @@ function loadBOMIntoForm(data) {
         block.querySelector('.washCareTotal').value = w.total || '';
     });
 
-    // -----------------------------
-    // 9. WOVEN SIZE LABELS
-    // -----------------------------
-    (data.wovenLabels || []).forEach(w => {
-        document.querySelector('.add-woven-btn').click();
+    /* =========================
+       9️⃣ WOVEN SIZE LABELS
+    ========================= */
+    (data.wovenSizes || []).forEach((ws, idx) => {
+        if (idx > 0) {
+            document.querySelector('.add-woven-btn').click();
+        }
+        const block = idx === 0 ? document.querySelector('.woven-block') : getLastBlock('.woven-block');
+        if (!block) return;
 
-        const blocks = document.querySelectorAll('.woven-block');
-        const block = blocks[blocks.length - 1];
-
-        block.querySelector('.wovenSizeLabel').value = w.size || '';
-        block.querySelector('.wovenSizeAmount').value = w.amount || '';
-        block.querySelector('.wovenSizeUnit').value = w.unit || '';
-        block.querySelector('.wovenSizePerGarment').value = w.perGarment || '';
-        block.querySelector('.wovenSizeSupplier').value = w.supplier || '';
-        block.querySelector('.wovenSizeQty').value = w.qty || '';
-        block.querySelector('.wovenSizeTotal').value = w.total || '';
+        block.querySelector('.wovenSizeLabel').value = ws.size || '';
+        block.querySelector('.wovenSizeAmount').value = ws.amount || '';
+        block.querySelector('.wovenSizeUnit').value = ws.unit || '';
+        block.querySelector('.wovenSizePerGarment').value = ws.perGarment || '';
+        block.querySelector('.wovenSizeSupplier').value = ws.supplier || '';
+        block.querySelector('.wovenSizeQty').value = ws.qty || '';
+        block.querySelector('.wovenSizeTotal').value = ws.total || '';
     });
 
-    // -----------------------------
-    // 10. TOTAL
-    // -----------------------------
+    /* =========================
+       COLLAR YARN (Static Fields)
+    ========================= */
+    document.getElementById('collarYarnType').value = data.collarYarnType || '';
+    document.getElementById('collarYarnAmount').value = data.collarYarnAmount || '';
+    document.getElementById('collarYarnUnit').value = data.collarYarnUnit || '';
+    document.getElementById('collarYarnPerGarment').value = data.collarYarnPerGarment || '';
+    document.getElementById('collarYarnSupplier').value = data.collarYarnSupplier || '';
+    document.getElementById('collarYarnQty').value = data.collarYarnQty || '';
+
+    /* =========================
+       TIPPING YARN (Static Fields)
+    ========================= */
+    document.getElementById('tippingYarnType').value = data.tippingYarnType || '';
+    document.getElementById('tippingYarnAmount').value = data.tippingYarnAmount || '';
+    document.getElementById('tippingYarnUnit').value = data.tippingYarnUnit || '';
+    document.getElementById('tippingYarnPerGarment').value = data.tippingYarnPerGarment || '';
+    document.getElementById('tippingYarnSupplier').value = data.tippingYarnSupplier || '';
+    document.getElementById('tippingYarnQty').value = data.tippingYarnQty || '';
+
+    /* =========================
+       POLYBAGS (Static Fields)
+    ========================= */
+    document.getElementById('polybagQuality').value = data.polybagQuality || '';
+    document.getElementById('polybagSize').value = data.polybagSize || '';
+    document.getElementById('polybagUnit').value = data.polybagUnit || '';
+    document.getElementById('polybagPerGarment').value = data.polybagPerGarment || '';
+    document.getElementById('polybagSupplier').value = data.polybagSupplier || '';
+    document.getElementById('polybagQty').value = data.polybagQty || '';
+
+    /* =========================
+       PRINTING & PACKAGING (Static Fields)
+    ========================= */
+    document.getElementById('printing').value = data.printing || '';
+    document.getElementById('embroidery').value = data.embroidery || '';
+    if (document.getElementById('printFront')) document.getElementById('printFront').value = data.printFront || '';
+    if (document.getElementById('printBack')) document.getElementById('printBack').value = data.printBack || '';
+    if (document.getElementById('printSleeve')) document.getElementById('printSleeve').value = data.printSleeve || '';
+    if (document.getElementById('packing')) document.getElementById('packing').value = data.packing || '';
+    if (document.getElementById('packingDetails')) document.getElementById('packingDetails').value = data.packing || '';
+    if (document.getElementById('tagRequired')) document.getElementById('tagRequired').value = data.tagRequired || '';
+
+    /* =========================
+       🔟 TOTAL
+    ========================= */
     document.getElementById('grandTotal').textContent = data.grandTotal || 0;
 
     alert("✅ Entry loaded into form successfully");
@@ -802,164 +880,272 @@ function calculateMultipleFabrics() {
 
     // Collect form data
     function collectFormData() {
+        const form = document.getElementById('bomForm');
+        const formData = new FormData(form);
+        const data = {};
+        
+        // Safe getter for optional inputs - define early so fallbacks can use it
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        };
+        
+        // ===== COLLECT MULTIPLE COLLARS =====
+        data.collars = [];
 
-    const getVal = (id) =>
-        document.getElementById(id)?.value || '';
-
-    const data = {};
-
-    /* =========================
-       1️⃣ ORDER INFORMATION
-    ========================= */
-    data.orderInfo = {
-        orderDate: getVal('orderDate'),
-        expectedDeliveryDate: getVal('expectedDeliveryDate'),
-        orderNumber: getVal('orderNumber'),
-        orderType: getVal('orderType'),
-        buyerName: getVal('buyerName')
-    };
-
-    /* =========================
-       2️⃣ FABRICS
-    ========================= */
-    data.fabrics = [];
-    document.querySelectorAll('.fabric-block').forEach(block => {
-        const totalEl = block.querySelector('.fabricTotal');
-        data.fabrics.push({
-            fabricType: block.querySelector('.fabricType')?.value || '',
-            fabricColor: block.querySelector('.fabricColor')?.value || '',
-            fabricAmount: parseFloat(block.querySelector('.fabricAmount')?.value) || 0,
-            fabricUnit: block.querySelector('.fabricUnit')?.value || '',
-            fabricPerGarment: parseFloat(block.querySelector('.fabricPerGarment')?.value) || 0,
-            fabricSupplier: block.querySelector('.fabricSupplier')?.value || '',
-            fabricQty: parseInt(block.querySelector('.fabricQty')?.value) || 0,
-            fabricTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
-    });
-
-    /* =========================
-       3️⃣ COLLARS
-    ========================= */
-    data.collars = [];
     document.querySelectorAll('.collar-block').forEach(block => {
         const totalEl = block.querySelector('.collarTotal');
-        data.collars.push({
-            collarSize: block.querySelector('.collarSize')?.value || '',
-            collarDimensions: block.querySelector('.collarDimensions')?.value || '',
-            collarUnit: block.querySelector('.collarUnit')?.value || '',
-            collarPerGarment: parseFloat(block.querySelector('.collarPerGarment')?.value) || 0,
-            collarSupplier: block.querySelector('.collarSupplier')?.value || '',
-            collarQty: parseInt(block.querySelector('.collarQty')?.value) || 0,
-            collarTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
+        const collar = {
+            size: block.querySelector('.collarSize')?.value || '',
+            dimensions: block.querySelector('.collarDimensions')?.value || '',
+            unit: block.querySelector('.collarUnit')?.value || '',
+            perGarment: block.querySelector('.collarPerGarment')?.value || '',
+            supplier: block.querySelector('.collarSupplier')?.value || '',
+            qty: block.querySelector('.collarQty')?.value || '',
+            // raw INR value
+            total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+        };
+
+        const anyFilled = [collar.size, collar.dimensions, collar.unit, collar.perGarment, collar.supplier, collar.qty, collar.total].some(v => String(v).trim() !== '');
+        if (anyFilled) data.collars.push(collar);
     });
 
-    /* =========================
-       4️⃣ CUFFS
-    ========================= */
-    data.cuffs = [];
-    document.querySelectorAll('.cuff-block').forEach(block => {
-        const totalEl = block.querySelector('.cuffTotal');
-        data.cuffs.push({
-            cuffSize: block.querySelector('.cuffSize')?.value || '',
-            cuffDimensions: block.querySelector('.cuffDimensions')?.value || '',
-            cuffUnit: block.querySelector('.cuffUnit')?.value || '',
-            cuffPerGarment: parseFloat(block.querySelector('.cuffPerGarment')?.value) || 0,
-            cuffSupplier: block.querySelector('.cuffSupplier')?.value || '',
-            cuffQty: parseInt(block.querySelector('.cuffQty')?.value) || 0,
-            cuffTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
-    });
+        // ===== COLLECT MULTIPLE CUFFS =====
+data.cuffs = [];
 
-    /* =========================
-       5️⃣ BUTTONS
-    ========================= */
-    data.buttons = [];
-    document.querySelectorAll('.button-block').forEach(block => {
-        const totalEl = block.querySelector('.buttonTotal');
-        data.buttons.push({
-            buttonMaterial: block.querySelector('.buttonMaterial')?.value || '',
-            buttonAmount: parseFloat(block.querySelector('.buttonAmount')?.value) || 0,
-            buttonUnit: block.querySelector('.buttonUnit')?.value || '',
-            buttonPerGarment: parseFloat(block.querySelector('.buttonPerGarment')?.value) || 0,
-            buttonSupplier: block.querySelector('.buttonSupplier')?.value || '',
-            buttonQty: parseInt(block.querySelector('.buttonQty')?.value) || 0,
-            buttonTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
-    });
+document.querySelectorAll('.cuff-block').forEach(block => {
+    const totalEl = block.querySelector('.cuffTotal');
+    const cuff = {
+        size: block.querySelector('.cuffSize')?.value || '',
+        dimensions: block.querySelector('.cuffDimensions')?.value || '',
+        unit: block.querySelector('.cuffUnit')?.value || '',
+        perGarment: block.querySelector('.cuffPerGarment')?.value || '',
+        supplier: block.querySelector('.cuffSupplier')?.value || '',
+        qty: block.querySelector('.cuffQty')?.value || '',
+        total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+    };
 
-    /* =========================
-       6️⃣ VELVET TAPES
-    ========================= */
-    data.velvetTapes = [];
-    document.querySelectorAll('.velvet-block').forEach(block => {
-        const totalEl = block.querySelector('.velvetTapeTotal');
-        data.velvetTapes.push({
-            velvetTapeQuality: block.querySelector('.velvetTapeQuality')?.value || '',
-            velvetTapeMeter: parseFloat(block.querySelector('.velvetTapeMeter')?.value) || 0,
-            velvetTapeUnit: block.querySelector('.velvetTapeUnit')?.value || '',
-            velvetTapePerGarment: parseFloat(block.querySelector('.velvetTapePerGarment')?.value) || 0,
-            velvetTapeSupplier: block.querySelector('.velvetTapeSupplier')?.value || '',
-            velvetTapeQty: parseInt(block.querySelector('.velvetTapeQty')?.value) || 0,
-            velvetTapeTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
-    });
+    const anyFilled = [cuff.size, cuff.dimensions, cuff.unit, cuff.perGarment, cuff.supplier, cuff.qty, cuff.total].some(v => String(v).trim() !== '');
+    if (anyFilled) data.cuffs.push(cuff);
+});
 
-    /* =========================
-       7️⃣ WASH CARE LABELS
-    ========================= */
-    data.washCareLabels = [];
-    document.querySelectorAll('.washcare-block').forEach(block => {
-        const totalEl = block.querySelector('.washCareTotal');
-        data.washCareLabels.push({
-            washCareQuality: block.querySelector('.washCareQuality')?.value || '',
-            washCareAmount: parseFloat(block.querySelector('.washCareAmount')?.value) || 0,
-            washCareUnit: block.querySelector('.washCareUnit')?.value || '',
-            washCarePerGarment: parseFloat(block.querySelector('.washCarePerGarment')?.value) || 0,
-            washCareSupplier: block.querySelector('.washCareSupplier')?.value || '',
-            washCareQty: parseInt(block.querySelector('.washCareQty')?.value) || 0,
-            washCareTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
-    });
-
-    /* =========================
-       8️⃣ WOVEN SIZE LABELS
-    ========================= */
-    data.wovenSizeLabels = [];
-    document.querySelectorAll('.woven-block').forEach(block => {
-        const totalEl = block.querySelector('.wovenSizeTotal');
-        data.wovenSizeLabels.push({
-            wovenSizeLabel: block.querySelector('.wovenSizeLabel')?.value || '',
-            wovenSizeAmount: parseFloat(block.querySelector('.wovenSizeAmount')?.value) || 0,
-            wovenSizeUnit: block.querySelector('.wovenSizeUnit')?.value || '',
-            wovenSizePerGarment: parseFloat(block.querySelector('.wovenSizePerGarment')?.value) || 0,
-            wovenSizeSupplier: block.querySelector('.wovenSizeSupplier')?.value || '',
-            wovenSizeQty: parseInt(block.querySelector('.wovenSizeQty')?.value) || 0,
-            wovenSizeTotal: totalEl?.dataset?.inr ? parseFloat(totalEl.dataset.inr) : 0
-        });
-    });
-
-    /* =========================
-       9️⃣ POLYBAGS
-    ========================= */
-    data.polybags = [{
-        polybagQuality: getVal('polybagQuality'),
-        polybagSize: getVal('polybagSize'),
-        polybagUnit: getVal('polybagUnit'),
-        polybagPerGarment: parseFloat(getVal('polybagPerGarment')) || 0,
-        polybagSupplier: getVal('polybagSupplier'),
-        polybagQty: parseInt(getVal('polybagQty')) || 0,
-        polybagTotal: parseFloat(getVal('polybagTotal')) || 0
-    }];
-
-    /* =========================
-       🔟 TOTAL
-    ========================= */
-    data.grandTotal = calculateAllTotals();
-
-    return data;
+// If there are no dynamic cuff-blocks, fall back to single cuff fields (existing HTML)
+if (data.cuffs.length === 0) {
+    const cuffTotalEl = document.getElementById('cuffTotal');
+    const singleCuff = {
+        size: getVal('cuffSize'),
+        dimensions: getVal('cuffDimensions'),
+        unit: getVal('cuffUnit'),
+        perGarment: getVal('cuffPerGarment'),
+        supplier: getVal('cuffSupplier'),
+        qty: getVal('cuffQty'),
+        total: cuffTotalEl && cuffTotalEl.dataset && cuffTotalEl.dataset.inr ? parseFloat(cuffTotalEl.dataset.inr) : (parseFloat(String(getVal('cuffTotal')||'').replace(/[^0-9.]/g,'')) || 0)
+    };
+    const anyFilled = [singleCuff.size, singleCuff.dimensions, singleCuff.unit, singleCuff.perGarment, singleCuff.supplier, singleCuff.qty, singleCuff.total].some(v => String(v).trim() !== '');
+    if (anyFilled) data.cuffs.push(singleCuff);
 }
 
+        // ===== COLLECT BUTTONS =====
+        data.buttons = [];
+        document.querySelectorAll('.button-block').forEach(block => {
+            const totalEl = block.querySelector('.buttonTotal');
+            const b = {
+                material: block.querySelector('.buttonMaterial')?.value || '',
+                amount: block.querySelector('.buttonAmount')?.value || '',
+                unit: block.querySelector('.buttonUnit')?.value || '',
+                perGarment: block.querySelector('.buttonPerGarment')?.value || '',
+                supplier: block.querySelector('.buttonSupplier')?.value || '',
+                qty: block.querySelector('.buttonQty')?.value || '',
+                total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+            };
+            const anyFilledBtn = [b.material, b.amount, b.unit, b.perGarment, b.supplier, b.qty, b.total].some(v => String(v).trim() !== '');
+            if (anyFilledBtn) data.buttons.push(b);
+        });
+
+        // ===== COLLECT VELVET TAPES =====
+        data.velvetTapes = [];
+        document.querySelectorAll('.velvet-block').forEach(block => {
+            const totalEl = block.querySelector('.velvetTapeTotal');
+            const v = {
+                quality: block.querySelector('.velvetTapeQuality')?.value || '',
+                meter: block.querySelector('.velvetTapeMeter')?.value || '',
+                unit: block.querySelector('.velvetTapeUnit')?.value || '',
+                perGarment: block.querySelector('.velvetTapePerGarment')?.value || '',
+                supplier: block.querySelector('.velvetTapeSupplier')?.value || '',
+                qty: block.querySelector('.velvetTapeQty')?.value || '',
+                total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+            };
+            const anyFilledVel = [v.quality, v.meter, v.unit, v.perGarment, v.supplier, v.qty, v.total].some(vv => String(vv).trim() !== '');
+            if (anyFilledVel) data.velvetTapes.push(v);
+        });
+
+        // ===== COLLECT WASH CARE LABELS =====
+        data.washCareLabels = [];
+        document.querySelectorAll('.washcare-block').forEach(block => {
+            const totalEl = block.querySelector('.washCareTotal');
+            const w = {
+                quality: block.querySelector('.washCareQuality')?.value || '',
+                amount: block.querySelector('.washCareAmount')?.value || '',
+                unit: block.querySelector('.washCareUnit')?.value || '',
+                perGarment: block.querySelector('.washCarePerGarment')?.value || '',
+                supplier: block.querySelector('.washCareSupplier')?.value || '',
+                qty: block.querySelector('.washCareQty')?.value || '',
+                total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+            };
+            const anyFilledWash = [w.quality, w.amount, w.unit, w.perGarment, w.supplier, w.qty, w.total].some(vv => String(vv).trim() !== '');
+            if (anyFilledWash) data.washCareLabels.push(w);
+        });
+
+        // ===== COLLECT WOVEN SIZE LABELS =====
+        data.wovenSizes = [];
+        document.querySelectorAll('.woven-block').forEach(block => {
+            const totalEl = block.querySelector('.wovenSizeTotal');
+            const s = {
+                size: block.querySelector('.wovenSizeLabel')?.value || '',
+                amount: block.querySelector('.wovenSizeAmount')?.value || '',
+                unit: block.querySelector('.wovenSizeUnit')?.value || '',
+                perGarment: block.querySelector('.wovenSizePerGarment')?.value || '',
+                supplier: block.querySelector('.wovenSizeSupplier')?.value || '',
+                qty: block.querySelector('.wovenSizeQty')?.value || '',
+                total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+            };
+            const anyFilledWoven = [s.size, s.amount, s.unit, s.perGarment, s.supplier, s.qty, s.total].some(vv => String(vv).trim() !== '');
+            if (anyFilledWoven) data.wovenSizes.push(s);
+        });
+
+        // ===== COLLECT FABRICS =====
+        data.fabrics = [];
+        document.querySelectorAll('.fabric-block').forEach(block => {
+            const totalEl = block.querySelector('.fabricTotal');
+            const f = {
+                type: block.querySelector('.fabricType')?.value || '',
+                color: block.querySelector('.fabricColor')?.value || '',
+                amount: block.querySelector('.fabricAmount')?.value || '',
+                unit: block.querySelector('.fabricUnit')?.value || '',
+                perGarment: block.querySelector('.fabricPerGarment')?.value || '',
+                supplier: block.querySelector('.fabricSupplier')?.value || '',
+                qty: block.querySelector('.fabricQty')?.value || '',
+                total: totalEl && totalEl.dataset && totalEl.dataset.inr ? parseFloat(totalEl.dataset.inr) : 0
+            };
+            const anyFilledFabric = [f.type, f.color, f.amount, f.unit, f.perGarment, f.supplier, f.qty, f.total].some(vv => String(vv).trim() !== '');
+            if (anyFilledFabric) data.fabrics.push(f);
+        });
+
+        // If there are no dynamic fabric-blocks, fall back to single fabric fields (existing HTML)
+        if (data.fabrics.length === 0) {
+            const fabricTotalEl = document.getElementById('fabricTotal');
+            const singleFabric = {
+                type: getVal('fabricType'),
+                color: getVal('fabricColor'),
+                amount: getVal('fabricAmount'),
+                unit: getVal('fabricUnit'),
+                perGarment: getVal('fabricPerGarment'),
+                supplier: getVal('fabricSupplier'),
+                qty: getVal('fabricQty'),
+                total: fabricTotalEl && fabricTotalEl.dataset && fabricTotalEl.dataset.inr ? parseFloat(fabricTotalEl.dataset.inr) : (parseFloat(String(getVal('fabricTotal')||'').replace(/[^0-9.]/g,'')) || 0)
+            };
+            const anyFilledFabric = [singleFabric.type, singleFabric.color, singleFabric.amount, singleFabric.unit, singleFabric.perGarment, singleFabric.supplier, singleFabric.qty, singleFabric.total].some(v => String(v).trim() !== '');
+            if (anyFilledFabric) data.fabrics.push(singleFabric);
+        }
+
+        
+        // Order Information
+        data.orderDate = getVal('orderDate');
+        data.expectedDeliveryDate = getVal('expectedDeliveryDate');
+        data.orderNumber = getVal('orderNumber');
+        data.orderType = getVal('orderType');
+        data.buyerName = getVal('buyerName') || '';
+
+        // Fabric Section - REMOVED (now handled in data.fabrics array above)
+
+        // Collar Yarn Section
+        data.collarYarnType = getVal('collarYarnType');
+        data.collarYarnAmount = getVal('collarYarnAmount');
+        data.collarYarnUnit = getVal('collarYarnUnit');
+        data.collarYarnPerGarment = getVal('collarYarnPerGarment');
+        data.collarYarnSupplier = getVal('collarYarnSupplier');
+        data.collarYarnQty = getVal('collarYarnQty');
+
+        // Tipping Yarn Section
+        data.tippingYarnType = getVal('tippingYarnType');
+        data.tippingYarnAmount = getVal('tippingYarnAmount');
+        data.tippingYarnUnit = getVal('tippingYarnUnit');
+        data.tippingYarnPerGarment = getVal('tippingYarnPerGarment');
+        data.tippingYarnSupplier = getVal('tippingYarnSupplier');
+        data.tippingYarnQty = getVal('tippingYarnQty');
+
+        // Buttons Section
+        data.buttonMaterial = getVal('buttonMaterial');
+        data.buttonAmount = getVal('buttonAmount');
+        data.buttonUnit = getVal('buttonUnit');
+        data.buttonPerGarment = getVal('buttonPerGarment');
+        data.buttonSupplier = getVal('buttonSupplier');
+        data.buttonQty = getVal('buttonQty');
+
+        // Velvet Tapes Section
+        data.velvetTapeQuality = getVal('velvetTapeQuality');
+        data.velvetTapeMeter = getVal('velvetTapeMeter');
+        data.velvetTapeUnit = getVal('velvetTapeUnit');
+        data.velvetTapePerGarment = getVal('velvetTapePerGarment');
+        data.velvetTapeSupplier = getVal('velvetTapeSupplier');
+        data.velvetTapeQty = getVal('velvetTapeQty');
+
+        // Wash Care Labels Section
+        data.washCareQuality = getVal('washCareQuality');
+        data.washCareAmount = getVal('washCareAmount');
+        data.washCareUnit = getVal('washCareUnit');
+        data.washCarePerGarment = getVal('washCarePerGarment');
+        data.washCareSupplier = getVal('washCareSupplier');
+        data.washCareQty = getVal('washCareQty');
+
+        // Woven Size Labels Section
+        data.wovenSizeLabel = getVal('wovenSizeLabel');
+        data.wovenSizeAmount = getVal('wovenSizeAmount');
+        data.wovenSizeUnit = getVal('wovenSizeUnit');
+        data.wovenSizePerGarment = getVal('wovenSizePerGarment');
+        data.wovenSizeSupplier = getVal('wovenSizeSupplier');
+        data.wovenSizeQty = getVal('wovenSizeQty');
+
+        // Polybags Section
+        data.polybagQuality = getVal('polybagQuality');
+        data.polybagSize = getVal('polybagSize');
+        data.polybagUnit = getVal('polybagUnit');
+        data.polybagPerGarment = getVal('polybagPerGarment');
+        data.polybagSupplier = getVal('polybagSupplier');
+        data.polybagQty = getVal('polybagQty');
+        
+        // Printing & Packaging fields
+        data.printing = getVal('printing');
+        data.embroidery = getVal('embroidery');
+        data.printFront = getVal('printFront') || '';
+        data.printBack = getVal('printBack') || '';
+        data.printSleeve = getVal('printSleeve') || '';
+        data.packing = getVal('packing') || getVal('packingDetails') || '';
+        data.tagRequired = getVal('tagRequired') || '';
+        
+        // Add calculated totals (raw INR values read from data-inr when available)
+        const getNumericTotal = (id) => {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            if (el.dataset && el.dataset.inr) return parseFloat(el.dataset.inr) || 0;
+            const raw = parseFloat(String(el.value || el.textContent || '').replace(/[^0-9.]/g,''));
+            return isNaN(raw) ? 0 : raw;
+        };
+
+        data.fabricTotal = Array.isArray(data.fabrics) && data.fabrics.length > 0 ? data.fabrics.reduce((s,f)=>s + (parseFloat(f.total)||0), 0) : getNumericTotal('fabricTotal');
+        data.collarYarnTotal = getNumericTotal('collarYarnTotal');
+        data.tippingYarnTotal = getNumericTotal('tippingYarnTotal');
+        data.collarTotal = getNumericTotal('collarTotal');
+        data.cuffTotal = getNumericTotal('cuffTotal');
+        data.buttonTotal = Array.isArray(data.buttons) && data.buttons.length > 0 ? data.buttons.reduce((s,b)=>s + (parseFloat(b.total)||0), 0) : getNumericTotal('buttonTotal');
+        data.velvetTapeTotal = Array.isArray(data.velvetTapes) && data.velvetTapes.length > 0 ? data.velvetTapes.reduce((s,v)=>s + (parseFloat(v.total)||0), 0) : getNumericTotal('velvetTapeTotal');
+        data.washCareTotal = Array.isArray(data.washCareLabels) && data.washCareLabels.length > 0 ? data.washCareLabels.reduce((s,w)=>s + (parseFloat(w.total)||0), 0) : getNumericTotal('washCareTotal');
+        data.wovenSizeTotal = Array.isArray(data.wovenSizes) && data.wovenSizes.length > 0 ? data.wovenSizes.reduce((s,siz)=>s + (parseFloat(siz.total)||0), 0) : getNumericTotal('wovenSizeTotal');
+        data.polybagTotal = getNumericTotal('polybagTotal');
+        data.grandTotal = calculateAllTotals();
+        
+        return data;
+    }
 
 
     // Show export card with specific file type
